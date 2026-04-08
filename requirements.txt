@@ -1,0 +1,9 @@
+yfinance
+pandas
+numpy
+scikit-learn
+mysql-connector-python
+PyQt6
+matplotlib
+python-dotenv
+joblib

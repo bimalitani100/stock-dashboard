@@ -1,35 +1,31 @@
-
-import yfinance as yf
 import pandas as pd
+import yfinance as yf
 
 
-def fetch_stock_data(ticker, period="1y"):
+def fetch_stock_data(ticker: str, period: str = "1y") -> pd.DataFrame:
     """
-    Downloads stock price data from Yahoo Finance.
-    
-    ticker = stock symbol like "AAPL" for Apple, "GOOGL" for Google
-    period = how far back to get data: "1wk", "1mo", "3mo", "1y"
-    
-    Returns a DataFrame with columns: Open, High, Low, Close, Volume
-    - Open: price when market opened that day
-    - High: highest price that day
-    - Low: lowest price that day
-    - Close: price when market closed that day
-    - Volume: how many shares were traded that day
+    Fetch stock data from Yahoo Finance.
+
+    Valid example periods:
+    5d, 1mo, 3mo, 6mo, 1y, 2y
     """
     try:
         stock = yf.Ticker(ticker)
         df = stock.history(period=period)
+
         if df.empty:
-            print(f"Warning: No data found for {ticker}")
+            print(f"No data found for {ticker}")
+            return pd.DataFrame()
+
+        df = df.reset_index()
+        df = df[["Date", "Open", "High", "Low", "Close", "Volume"]].copy()
         return df
     except Exception as e:
         print(f"Error fetching {ticker}: {e}")
         return pd.DataFrame()
 
 
-# This runs only when you test this file directly
 if __name__ == "__main__":
-    df = fetch_stock_data("AAPL", "1y")
-    print(f"Fetched {len(df)} rows for AAPL")
-    print(df.head())
+    sample = fetch_stock_data("AAPL", "1y")
+    print(sample.head())
+    print(f"Rows fetched: {len(sample)}")

@@ -7,66 +7,78 @@ class PriceChartWidget(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.figure = Figure(figsize=(8, 5))
+        self.figure = Figure(figsize=(9, 5))
         self.canvas = FigureCanvas(self.figure)
 
         layout = QVBoxLayout()
         layout.addWidget(self.canvas)
         self.setLayout(layout)
 
-    def update_chart(self, df):
+    def update_chart(self, df, ticker="Stock"):
         self.figure.clear()
         ax = self.figure.add_subplot(111)
 
         if df is None or df.empty:
-            ax.set_title("No data available")
+            ax.set_title("No chart data available")
             self.canvas.draw()
             return
 
-        # Use actual column values, not the column name string
-        if "Date" in df.columns:
-            x_values = df["Date"]
-        else:
-            x_values = df.index
-
+        x_values = df["Date"] if "Date" in df.columns else df.index
         close_col = "Close" if "Close" in df.columns else "close"
 
-        ax.plot(x_values, df[close_col], label="Close Price")
+        current = float(df.iloc[-1][close_col])
+        previous = float(df.iloc[-2][close_col]) if len(df) > 1 else current
+        change = ((current - previous) / previous) * 100 if previous else 0
+
+        ax.plot(x_values, df[close_col], linewidth=2.5, label="Live Price")
 
         if "ma_20" in df.columns:
-            ax.plot(x_values, df["ma_20"], label="MA 20")
+            ax.plot(x_values, df["ma_20"], linewidth=1.5, linestyle="--", label="MA 20")
 
         if "ma_50" in df.columns:
-            ax.plot(x_values, df["ma_50"], label="MA 50")
+            ax.plot(x_values, df["ma_50"], linewidth=1.5, linestyle="--", label="MA 50")
 
-        ax.set_title("Stock Price History")
+        direction = "▲" if change >= 0 else "▼"
+        ax.set_title(f"{ticker}  ${current:.2f}  {direction} {change:.2f}%")
         ax.set_xlabel("Date")
-        ax.set_ylabel("Price")
-        ax.legend()
+        ax.set_ylabel("Price ($)")
+        ax.grid(True, alpha=0.25)
+        ax.legend(loc="upper left")
         self.figure.autofmt_xdate()
         self.canvas.draw()
 
-    def show_predictions(self, actual_df, prediction_df):
+
+class PredictionMiniChart(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        self.figure = Figure(figsize=(4, 2.7))
+        self.canvas = FigureCanvas(self.figure)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.canvas)
+        self.setLayout(layout)
+
+    def update_prediction(self, prediction_df, ticker="Stock"):
         self.figure.clear()
         ax = self.figure.add_subplot(111)
 
-        if actual_df is not None and not actual_df.empty:
-            if "Date" in actual_df.columns:
-                x_values = actual_df["Date"]
-            else:
-                x_values = actual_df.index
+        if prediction_df is None or prediction_df.empty:
+            ax.set_title("No prediction yet")
+            self.canvas.draw()
+            return
 
-            close_col = "Close" if "Close" in actual_df.columns else "close"
-            ax.plot(x_values, actual_df[close_col], label="Actual Close")
+        ax.plot(
+            prediction_df["day"],
+            prediction_df["predicted_close"],
+            marker="o",
+            linewidth=2,
+            label="Forecast"
+        )
 
-        if prediction_df is not None and not prediction_df.empty:
-            ax.plot(
-                prediction_df["day"],
-                prediction_df["predicted_close"],
-                label="Predicted",
-                linestyle="--",
-            )
-
-        ax.set_title("Actual vs Predicted")
-        ax.legend()
+        ax.set_title(f"{ticker} 7-Day Forecast")
+        ax.set_xlabel("Day")
+        ax.set_ylabel("Predicted Price")
+        ax.grid(True, alpha=0.25)
+        ax.legend(loc="upper left")
         self.canvas.draw()

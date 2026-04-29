@@ -2,30 +2,6 @@ from config.db_config import get_connection
 
 
 class AlertService:
-    def create_alert(self, ticker, alert_type, threshold):
-        conn = get_connection()
-        if conn is None:
-            return None
-
-        try:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                INSERT INTO alerts (ticker, alert_type, threshold, is_active)
-                VALUES (%s, %s, %s, TRUE)
-                """,
-                (ticker, alert_type, threshold),
-            )
-            conn.commit()
-            return cursor.lastrowid
-        except Exception as e:
-            conn.rollback()
-            print(f"Error creating alert: {e}")
-            return None
-        finally:
-            cursor.close()
-            conn.close()
-
     def check_price_change(self, ticker, current_price, previous_price):
         if previous_price == 0:
             return []
@@ -34,7 +10,9 @@ class AlertService:
         triggered = []
 
         if abs(percent_change) >= 2:
-            message = f"{ticker} moved {percent_change:.2f}%"
+            direction = "increased" if percent_change > 0 else "decreased"
+            message = f"{ticker} {direction} by {percent_change:.2f}%"
+
             triggered.append({
                 "ticker": ticker,
                 "percent_change": round(percent_change, 2),
@@ -60,28 +38,29 @@ class AlertService:
                 """,
                 (ticker,),
             )
+
             users = cursor.fetchall()
 
-            insert_cursor = conn.cursor()
             for user in users:
-                insert_cursor.execute(
+                cursor.execute(
                     """
-                    INSERT INTO alert_history (alert_id, user_id, ticker, triggered_value, message, is_read)
+                    INSERT INTO alert_history
+                    (alert_id, user_id, ticker, triggered_value, message, is_read)
                     VALUES (%s, %s, %s, %s, %s, FALSE)
                     """,
                     (alert_id, user["id"], ticker, triggered_value, message),
                 )
 
             conn.commit()
+
         except Exception as e:
             conn.rollback()
             print(f"Error notifying users: {e}")
         finally:
             cursor.close()
-            insert_cursor.close()
             conn.close()
 
-    def get_alert_history(self, user_id=None, limit=20):
+    def get_alert_history(self, user_id=None, limit=10):
         conn = get_connection()
         if conn is None:
             return []
@@ -92,7 +71,8 @@ class AlertService:
             if user_id:
                 cursor.execute(
                     """
-                    SELECT * FROM alert_history
+                    SELECT ticker, triggered_value, message, triggered_at
+                    FROM alert_history
                     WHERE user_id = %s
                     ORDER BY triggered_at DESC
                     LIMIT %s
@@ -102,7 +82,8 @@ class AlertService:
             else:
                 cursor.execute(
                     """
-                    SELECT * FROM alert_history
+                    SELECT ticker, triggered_value, message, triggered_at
+                    FROM alert_history
                     ORDER BY triggered_at DESC
                     LIMIT %s
                     """,
@@ -110,6 +91,7 @@ class AlertService:
                 )
 
             return cursor.fetchall()
+
         except Exception as e:
             print(f"Error fetching alert history: {e}")
             return []

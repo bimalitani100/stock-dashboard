@@ -20,8 +20,9 @@ def run_schema():
 
     try:
         cursor = conn.cursor()
-        with open(schema_path, "r", encoding="utf-8") as f:
-            sql_commands = f.read()
+
+        with open(schema_path, "r", encoding="utf-8") as file:
+            sql_commands = file.read()
 
         for statement in sql_commands.split(";"):
             stmt = statement.strip()
@@ -30,34 +31,51 @@ def run_schema():
 
         conn.commit()
         print("Schema loaded successfully.")
+
     except Exception as e:
         conn.rollback()
         print(f"Error running schema: {e}")
+
     finally:
         cursor.close()
         conn.close()
 
 
-def main():
-    initialize_database()
-    run_schema()
+class AppController:
+    def __init__(self):
+        self.app = QApplication(sys.argv)
+        self.login_window = None
+        self.main_window = None
 
-    auth_service = AuthService()
-    auth_service.create_default_users()
+        initialize_database()
+        run_schema()
 
-    app = QApplication(sys.argv)
+        self.auth_service = AuthService()
+        self.auth_service.create_default_users()
 
-    windows = {}
+    def show_login(self):
+        self.login_window = LoginWindow(self.handle_login_success)
+        self.login_window.show()
 
-    def handle_login_success(user):
-        windows["main_window"] = MainWindow(user)
-        windows["main_window"].show()
+    def handle_login_success(self, user):
+        self.main_window = MainWindow(user, self)
+        self.main_window.show()
 
-    windows["login_window"] = LoginWindow(handle_login_success)
-    windows["login_window"].show()
+        if self.login_window:
+            self.login_window.close()
 
-    sys.exit(app.exec())
+    def logout(self):
+        if self.main_window:
+            self.main_window.close()
+            self.main_window = None
+
+        self.show_login()
+
+    def run(self):
+        self.show_login()
+        sys.exit(self.app.exec())
 
 
 if __name__ == "__main__":
-    main()
+    controller = AppController()
+    controller.run()

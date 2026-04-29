@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS holdings (
     quantity INT NOT NULL DEFAULT 0,
     average_buy_price DECIMAL(12,4) DEFAULT 0.0000,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_user_ticker (user_id, ticker),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (ticker) REFERENCES stocks(ticker) ON DELETE CASCADE
 );

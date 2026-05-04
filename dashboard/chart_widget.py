@@ -52,7 +52,7 @@ class PredictionMiniChart(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.figure = Figure(figsize=(4, 2.7))
+        self.figure = Figure(figsize=(5, 3))  # bigger
         self.canvas = FigureCanvas(self.figure)
 
         layout = QVBoxLayout()
@@ -68,17 +68,22 @@ class PredictionMiniChart(QWidget):
             self.canvas.draw()
             return
 
+        y = prediction_df["predicted_close"]
+
         ax.plot(
             prediction_df["day"],
-            prediction_df["predicted_close"],
+            y,
             marker="o",
-            linewidth=2,
-            label="Forecast"
+            linewidth=2.5,
+            linestyle="-"
         )
 
-        ax.set_title(f"{ticker} 7-Day Forecast")
+        # FIX SCALING ISSUE 👇
+        ax.set_ylim(min(y) * 0.98, max(y) * 1.02)
+
+        ax.set_title(f"{ticker} Forecast (7 Days)")
         ax.set_xlabel("Day")
-        ax.set_ylabel("Predicted Price")
-        ax.grid(True, alpha=0.25)
-        ax.legend(loc="upper left")
+        ax.set_ylabel("Price ($)")
+        ax.grid(True, alpha=0.3)
+
         self.canvas.draw()

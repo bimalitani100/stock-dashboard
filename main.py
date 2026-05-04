@@ -2,11 +2,33 @@ import sys
 from pathlib import Path
 
 from PyQt6.QtWidgets import QApplication
+from PyQt6.QtGui import QPalette, QColor
+from PyQt6.QtCore import Qt
 
 from auth.auth_service import AuthService
 from auth.login_window import LoginWindow
 from config.db_config import initialize_database, get_connection
 from dashboard.main_window import MainWindow
+
+
+def apply_light_theme(app):
+    app.setStyle("Fusion")
+
+    palette = QPalette()
+    palette.setColor(QPalette.ColorRole.Window, QColor("#eef2f7"))
+    palette.setColor(QPalette.ColorRole.WindowText, QColor("#111827"))
+    palette.setColor(QPalette.ColorRole.Base, QColor("#ffffff"))
+    palette.setColor(QPalette.ColorRole.AlternateBase, QColor("#f3f4f6"))
+    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor("#ffffff"))
+    palette.setColor(QPalette.ColorRole.ToolTipText, QColor("#111827"))
+    palette.setColor(QPalette.ColorRole.Text, QColor("#111827"))
+    palette.setColor(QPalette.ColorRole.Button, QColor("#2563eb"))
+    palette.setColor(QPalette.ColorRole.ButtonText, QColor("#ffffff"))
+    palette.setColor(QPalette.ColorRole.BrightText, QColor("#ffffff"))
+    palette.setColor(QPalette.ColorRole.Highlight, QColor("#2563eb"))
+    palette.setColor(QPalette.ColorRole.HighlightedText, QColor("#ffffff"))
+
+    app.setPalette(palette)
 
 
 def run_schema():
@@ -44,6 +66,8 @@ def run_schema():
 class AppController:
     def __init__(self):
         self.app = QApplication(sys.argv)
+        apply_light_theme(self.app)
+
         self.login_window = None
         self.main_window = None
 
